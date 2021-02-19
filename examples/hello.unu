@@ -1,0 +1,96 @@
+# note: p[n] represents the nth item of the program list.
+
+(
+	# p[0]: Memory mapped console input/output goes here.
+	# I'm going to refer to this item as 'io' from now on.
+	1,
+
+	(
+		(
+			# p[1][0]: Text to be printed. (I'm going to refer to this list as 'str' from now on.)
+
+			# The text is encoded one bit by one in str[n][1:7] (where n = index of the text)
+			# in str[n][1:7], the item (1) represents 0 and 1 represents 1. Since list would be
+			# evaluated to 0 when it is given as an argument to 4-argument-command.
+			
+			# The program will read each bit and save decoded ASCII value in str[n][0].
+
+			(1, (1), (1), (1), 1, (1), (1), 1),			# 'H'
+			(1, 1, (1), 1, (1), (1), 1, 1),				# 'e'
+			(1, (1), (1), 1, 1, (1), 1, 1),				# 'l'
+			(1, (1), (1), 1, 1, (1), 1, 1),				# 'l'
+			(1, 1, 1, 1, 1, (1), 1, 1),					# 'o'
+			(1, (1), (1), 1, 1, (1), 1, (1)),			# ','
+			(1, (1), (1), (1), (1), (1), 1, (1)),		# ' '
+			(1, 1, 1, 1, (1), 1, 1, 1),					# 'w'
+			(1, 1, 1, 1, 1, (1), 1, 1),					# 'o'
+			(1, (1), 1, (1), (1), 1, 1, 1),				# 'r'
+			(1, (1), (1), 1, 1, (1), 1, 1),				# 'l'
+			(1, (1), (1), 1, (1), (1), 1, 1),			# 'd'
+			(1, 1, (1), (1), (1), (1), 1, (1)),			# '!'
+			(1, (1), (1), (1), (1), (1), (1), (1))		# '\0'
+		),
+		(
+			# p[1][1][0]: Index of a bit the program's reading from each char of str.
+			# (I'm going to refer to this item as 'bit' from now on.)
+
+			1,
+
+			# p[1][1][1]: Index of a character the program's reading from str.
+			# (I'm going to refer to this item as 'index' from now on.)
+
+			1
+		),
+		(
+			# p[1][2]: Character Convert Subroutine
+
+			# bit = 7
+			((((1), 1), (1, 1, 1)), 1, (((((((1, 1, 1), 1, 1), 1, 1), 1, 1), 1, 1), 1, 1), 1, 1), 1),
+			
+			# str[index][0] = 0
+			(((((1), (1, 1, 1)), (((1), 1), 1)), (1, 1, 1)), 1, 1, 1)
+			
+			# call Bit Convert Subroutine
+			(1, (1, 1, 1), ((1), (1, (((1, 1, 1), 1, 1), 1, 1), 1))),
+			
+			# index = index + 1
+			((((1), 1), 1), (((1), 1), 1), ((1, 1, 1), 1, 1), 1),
+			
+			# If str[index - 1][0] > 0, call Character Convert Subroutine again.
+			(((((1), (1, 1, 1)), ((((1), 1), 1), 1, 1)), (1, 1, 1)), (1, 1, 1), ((1), (1, ((1, 1, 1), 1, 1), 1)))
+		),
+		(
+			# p[1][3]: Bit Convert Subroutine
+			
+			# text[index][0] = text[index][0] + text[index][0]
+			(((((1), (1, 1, 1)), (((1), 1), 1)), (1, 1, 1)), ((((1), (1, 1, 1)), (((1), 1), 1)), (1, 1, 1)), ((1, 1, 1), ((((1), (1, 1, 1)), (((1), 1), 1)), (1, 1, 1)), 1), 1),
+			
+			# text[index][0] = text[index][0] + text[index][bit]
+			(((((1), (1, 1, 1)), (((1), 1), 1)), (1, 1, 1)), ((((1), (1, 1, 1)), (((1), 1), 1)), (1, 1, 1)), ((1, 1, 1), ((((1), (1, 1, 1)), (((1), 1), 1)), (((1), 1), (1, 1, 1))), 1), 1),
+			
+			# bit = bit - 1, and if the calculated value > 0, call Bit Convert Subroutine again.
+			((((1), 1), (1, 1, 1)), (((1), 1), (1, 1, 1)), 1, ((1), (1, (((1, 1, 1), 1, 1), 1, 1), 1)))
+		),
+		(
+			# p[1][4]: String Print Subroutine
+
+			# index = index + 1
+			((((1), 1), 1), (((1), 1), 1), ((1, 1, 1), 1, 1), 1),
+
+			# io = text[index - 1][0], and if the calculated value > 0, call String Print Subroutine again.
+			(((1, 1, 1)), ((((1), (1, 1, 1)), ((((1), 1), 1), 1, 1)), (1, 1, 1)), (1, 1, 1), ((1), (1, ((((1, 1, 1), 1, 1), 1, 1), 1, 1), 1)))
+		)
+	),
+
+	# index = 0
+	((((1), 1), 1), 1, 1, 1),
+
+	# Call Character Convert Subroutine
+	(1, (1, 1, 1), ((1), (1, ((1, 1, 1), 1, 1), 1))),
+
+	# index = 0
+	((((1), 1), 1), 1, 1, 1),
+
+	# Call String Print Subroutine
+	(1, (1, 1, 1), ((1), (1, ((((1, 1, 1), 1, 1), 1, 1), 1, 1), 1)))
+)
