@@ -8,11 +8,11 @@ using std::vector;
 
 namespace Unu
 {
-	UnuEvaluator::UnuEvaluator() : program(UnuVar(vector<UnuVar>()))
+	UnuEvaluator::UnuEvaluator() : program(UnuVar(vector<UnuVar>())), programStack(), calcStack()
 	{
 
 	}
-
+	
 	void UnuEvaluator::Parse(string code)
 	{
 		vector<UnuVar> stack = vector<UnuVar>();
@@ -29,7 +29,7 @@ namespace Unu
 			{
 				if (stack.size() == 0)
 					throw ParseException("Expected EOF, read '1'.");
-				stack.back().AddItem(UnuVar(1));
+				stack.back().listValue.push_back(UnuVar(1));
 			}
 			else if (!comment && c == ')')
 			{
@@ -38,7 +38,7 @@ namespace Unu
 				back = stack.back();
 				stack.pop_back();
 				if (stack.size() != 0)
-					stack.back().AddItem(back);
+					stack.back().listValue.push_back(back);
 			}
 			else if (c == '#')
 			{
@@ -58,98 +58,163 @@ namespace Unu
 
 	void UnuEvaluator::Evaluate()
 	{
-		EvalList(program);
-	}
+		vector<UnuVar*> commandStack = vector<UnuVar*>();
 
-	void UnuEvaluator::EvalList(UnuVar var)
-	{
-		for (UnuVar& item : var.GetListItems())
-			EvalCmd(item);
-	}
+		programStack.clear();
+		for (auto i = program.listValue.rbegin(); i != program.listValue.rend(); i++)
+			programStack.push_back(&*i);
 
-	UnuVar UnuEvaluator::EvalCmd(UnuVar var, bool lvalue)
-	{
-		if (var.IsList())
+		while (!programStack.empty())
 		{
-			vector<UnuVar> args = var.GetListItems();
-			size_t size = args.size();
+			commandStack.clear();
+			calcStack.clear();
+			
+			commandStack.push_back(programStack.back());
+			programStack.pop_back();
 
-			if (size == 1)
-				return TwoArgCmd(UnuVar(&program), EvalCmd(args[0]), lvalue);
-			else if (size == 2)
-				return TwoArgCmd(EvalCmd(args[0], true), EvalCmd(args[1]), lvalue);
-			else if (size == 3)
-				return FourArgCmd(UnuVar(&program), EvalCmd(args[0]), EvalCmd(args[1]), EvalCmd(args[2]));
-			else if (size == 4)
-				return FourArgCmd(EvalCmd(args[0], true), EvalCmd(args[1]), EvalCmd(args[2]), EvalCmd(args[3]));
-			else
-				return var;
+			UnuVar* root = nullptr;
+			UnuVar* last = nullptr;
+
+			while (!commandStack.empty())
+			{
+				root = commandStack.back();
+
+				size_t itemCount = root->listValue.size();
+				
+				if (root->type == List && last == &(root->listValue.back()))
+				{
+					if (itemCount <= 2)
+					{
+						UnuVar i = calcStack.back();
+						calcStack.pop_back();
+
+						UnuVar r = UnuVar(&program);
+						if (itemCount == 2)
+						{
+							r = calcStack.back();
+							calcStack.pop_back();
+						}
+
+						TwoArgCmd(r, i);
+					}
+					else if (itemCount <= 4)
+					{
+						UnuVar s = calcStack.back();
+						calcStack.pop_back();
+						UnuVar b = calcStack.back();
+						calcStack.pop_back();
+						UnuVar a = calcStack.back();
+						calcStack.pop_back();
+						UnuVar d = UnuVar(&program);
+						if (itemCount == 4)
+						{
+							d = calcStack.back();
+							calcStack.pop_back();
+						}
+
+						FourArgCmd(d, a, b, s);
+					}
+					commandStack.pop_back();
+					last = root;
+				}
+				else if (itemCount == 0 || itemCount > 4)
+				{
+					calcStack.push_back(UnuVar(*root));
+					commandStack.pop_back();
+					last = root;
+				}
+				else
+				{
+					for (auto i = root->listValue.rbegin(); i != root->listValue.rend(); i++)
+						commandStack.push_back(&*i);
+				}
+			}
 		}
+	}
+
+	void UnuEvaluator::TwoArgCmd(UnuVar r, UnuVar i)
+	{
+		UnuVar* reference = nullptr;
+		if (r.type == Reference && r.reference->type == List)
+			reference = r.reference;
 		else
-		{
-			return var;
-		}
-	}
-
-	UnuVar UnuEvaluator::TwoArgCmd(UnuVar r, UnuVar i, bool lvalue)
-	{
-		if (!r.IsListReference())
 			throw EvaluationException("the first argument of the 2-argument-instruction should be a reference to a list.");
 
-		if (!i.IsInteger())
+		int64 index = 0;
+		if (i.type == Integer)
+			index = i.intValue;
+		else if (i.type == Reference && i.reference->type == Integer)
+		{
+			OnRead(i);
+			index = i.reference->intValue;
+		}
+		else
 			throw EvaluationException("the second argument of the 2-argument-instruction should be integer.");
 
-		if ((int)r.GetReferencedListSize() <= i.GetIntValue())
+		if ((int)reference->listValue.size() <= index)
 			throw EvaluationException("list out of index.");
 
-		UnuVar reference = r.GetItemReferenceAt((int)i.GetIntValue());
-
-		if (lvalue)
-			return reference;
-		else
-		{
-			OnRead(reference);
-			return reference.GetReferenceValue();
-		}
+		calcStack.push_back(&(reference->listValue[index]));
 	}
 
-	UnuVar UnuEvaluator::FourArgCmd(UnuVar d, UnuVar a, UnuVar b, UnuVar s)
+	void UnuEvaluator::FourArgCmd(UnuVar d, UnuVar a, UnuVar b, UnuVar s)
 	{
 		int64 v = 0;
 
-		if (a.IsInteger())
-			v += a.GetIntValue();
-
-		if (b.IsInteger())
-			v -= b.GetIntValue();
-
-		if (d.IsIntegerReference())
+		if (a.type == Integer)
+			v += a.intValue;
+		else if (a.type == Reference && a.reference->type == Integer)
 		{
-			d.SetIntValue(v);
-			OnWrite(d, v);
+			OnRead(a);
+			v += a.reference->intValue;
 		}
+
+		if (b.type == Integer)
+			v -= b.intValue;
+		else if (b.type == Reference && b.reference->type == Integer)
+		{
+			OnRead(b);
+			v -= b.reference->intValue;
+		}
+
+		if (d.type == Reference && d.reference->type == Integer)
+		{
+			d.reference->intValue = v;
+			OnWrite(d);
+		}
+		else if (d.type != Reference)
+			throw EvaluationException("the first argument of the 4-argument-instruction should be a reference.");
 
 		if (v > 0)
 		{
-			EvalList(s);
+			if (s.type == List)
+			{
+				for (auto i = s.listValue.rbegin(); i != s.listValue.rend(); i++)
+					programStack.push_back(&*i);
+			}
+			else if (s.type == Reference && s.reference->type == List)
+			{
+				for (auto i = s.reference->listValue.rbegin(); i != s.reference->listValue.rend(); i++)
+					programStack.push_back(&*i);
+			}
 		}
 
-		return UnuVar(v);
+		calcStack.push_back(UnuVar(v));
 	}
 
 	void UnuEvaluator::OnRead(UnuVar i)
 	{
-		if (UnuVar::IsSameReference(i, program.GetItemReferenceAt(0)))
+		if (i.reference == &(program.listValue[0]))
 		{
-			i.SetIntValue(cin.get());
+			i.reference->intValue = cin.get();
 		}
 	}
 
-	void UnuEvaluator::OnWrite(UnuVar i, int64 v)
+	void UnuEvaluator::OnWrite(UnuVar i)
 	{
-		if (UnuVar::IsSameReference(i, program.GetItemReferenceAt(0)) && v != 0)
+		if (i.reference == &(program.listValue[0]))
 		{
-			cout << (char)v;
+			cout << (char)i.reference->intValue;
 		}
 	}
 }
