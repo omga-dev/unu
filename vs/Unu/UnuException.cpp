@@ -4,9 +4,9 @@ using std::vector;
 
 namespace Unu
 {
-	UnuException::UnuException(string message) : message(message) {}
+	UnuException::UnuException(const string& message) : message(message) {}
 	const char* UnuException::what() { return message.c_str(); }
 
-	ParseException::ParseException(string message) : UnuException(message) {}
-	EvaluationException::EvaluationException(string message) : UnuException(message) {}
+	ParseException::ParseException(const string& message) : UnuException(message) {}
+	EvaluationException::EvaluationException(const string&  message) : UnuException(message) {}
 }

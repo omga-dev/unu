@@ -1,16 +1,16 @@
 #pragma once
 
 #include <vector>
+#include <cstdint>
 
 namespace Unu
 {
-	typedef long long int64;
+	using int64 = std::int64_t;
 
 	enum UnuVarType { Integer, List, Reference };
 
 	struct UnuVar
 	{
-	public:
 		UnuVarType type;
 		int64 intValue;
 		std::vector<UnuVar> listValue;
