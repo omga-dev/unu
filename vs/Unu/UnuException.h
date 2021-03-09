@@ -12,19 +12,19 @@ namespace Unu
 	{
 		string message;
 	public:
-		UnuException(string message);
+		UnuException(const string&  message);
 		virtual const char* what();
 	};
 
 	class ParseException : public UnuException
 	{
 	public:
-		ParseException(string message);
+		ParseException(const string&  message);
 	};
 
 	class EvaluationException : public UnuException
 	{
 	public:
-		EvaluationException(string message);
+		EvaluationException(const string&  message);
 	};
 }

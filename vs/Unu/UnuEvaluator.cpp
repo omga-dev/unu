@@ -61,7 +61,7 @@ namespace Unu
 		vector<UnuVar*> commandStack = vector<UnuVar*>();
 
 		programStack.clear();
-		for (auto i = program.listValue.rbegin(); i != program.listValue.rend(); i++)
+		for (auto i = program.listValue.rbegin(); i != program.listValue.rend(); ++i)
 			programStack.push_back(&*i);
 
 		while (!programStack.empty())
@@ -125,7 +125,7 @@ namespace Unu
 				}
 				else
 				{
-					for (auto i = root->listValue.rbegin(); i != root->listValue.rend(); i++)
+					for (auto i = root->listValue.rbegin(); i != root->listValue.rend(); ++i)
 						commandStack.push_back(&*i);
 				}
 			}
@@ -189,12 +189,12 @@ namespace Unu
 		{
 			if (s.type == List)
 			{
-				for (auto i = s.listValue.rbegin(); i != s.listValue.rend(); i++)
+				for (auto i = s.listValue.rbegin(); i != s.listValue.rend(); ++i)
 					programStack.push_back(&*i);
 			}
 			else if (s.type == Reference && s.reference->type == List)
 			{
-				for (auto i = s.reference->listValue.rbegin(); i != s.reference->listValue.rend(); i++)
+				for (auto i = s.reference->listValue.rbegin(); i != s.reference->listValue.rend(); ++i)
 					programStack.push_back(&*i);
 			}
 		}
